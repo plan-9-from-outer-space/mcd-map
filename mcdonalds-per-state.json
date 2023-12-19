@@ -548,5 +548,27 @@
     "McDonald's per 100,000": 4.86,
     "Difference": -10.73,
     "Rank": 12
+  },
+  {
+    "STATE": "District of Columbia",
+    "Number of McDonald's": 79,
+    "Number of Payday Lenders": 0,
+    "How many more Payday Lenders?": 0,
+    "RANK": 0,
+    "Payday Lenders Per 100,000": 0.0,
+    "McDonald's per 100,000": 11.08,
+    "Difference": 0.0,
+    "Rank": 0
+  },
+  {
+    "STATE": "Puerto Rico",
+    "Number of McDonald's": 108,
+    "Number of Payday Lenders": 0,
+    "How many more Payday Lenders?": 0,
+    "RANK": 0,
+    "Payday Lenders Per 100,000": 0.0,
+    "McDonald's per 100,000": 3.31,
+    "Difference": 0.0,
+    "Rank": 0
   }
 ]

@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8" />
-<title>McDonald's Per State</title>
-<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
-<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
-<link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
-<script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
-<style>
-	body { margin: 0; padding: 0; }
-	#map { position: absolute; top: 0; bottom: 0; width: 100%; }
-</style>
+	<meta charset="utf-8" />
+	<title>McDonald's Per State</title>
+	<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+	<link rel="icon" type="image/x-icon" href="home-icon.jpg">
+	<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+	<link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+	<script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
+	<style>
+		body { margin: 0; padding: 0; }
+		#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+	</style>
 </head>
 <body>
+
 <div id="map"></div>
+
 <script>
+
     var map = new maplibregl.Map({
         container: 'map', // container id
         style: 'https://demotiles.maplibre.org/style.json', // style URL
@@ -22,35 +26,84 @@
         zoom: 1 // starting zoom
     });
 
-		// We make a variable to hold the spreadsheet information once we get it
-		let mcdonaldsInformation = false;
+	// We make a variable to hold the spreadsheet information once we get it
+	let mcdonaldsInformation = false;
 
-		var popup = new maplibregl.Popup({ closeOnClick: false })
+	var popup = new maplibregl.Popup({ closeOnClick: false });
 
-		map.on('load', () => {
+	map.on('load', () => {
 
 			// These won't necessarily run or finish in order, so you have to keep that in mind!
-			fetch('./mcdonalds-per-state.json').then(response => response.json()).then(mcdonaldsResponse => {
+			fetch('./mcdonalds-per-state.json')
+			  .then (response => response.json())
+			  .then (mcdonaldsResponse => {
+
 				mcdonaldsInformation = mcdonaldsResponse;
+				// console.log(mcdonaldsInformation);
 
-				fetch('./us-states.json').then(response => response.json()).then(stateResponse => {
+				fetch('./us-states.json')
+				  .then (response => response.json())
+				  .then (stateResponse => {
 
+					let minNum = 999999999;
+					let maxNum = 0;
+					let minNum100K = 999999999;
+					let maxNum100K = 0;
 					// Putting each mcdonald's data into the geoJSON properties
 					// Whew!
+					// DOUBLE LOOP - Removed - See below.
+					//
+					// stateResponse.features.forEach(state => {
+					// 	mcdonaldsInformation.forEach(mcdonalds => {
+					// 		if(state.properties.name === mcdonalds.STATE) {
+					// 			// Create a new field.
+					// 			thisNum = mcdonalds["Number of McDonald's"];
+					// 			state.properties.numberOfMcdonalds = thisNum;
+					// 			maxNum = Math.max(maxNum, thisNum);
+					// 			// Create another new field.
+					// 			thisNum = mcdonalds["McDonald's per 100,000"];
+					// 			state.properties.numberPer100K = thisNum;
+					// 			minNum100K = Math.min(minNum100K, thisNum);
+					// 			maxNum100K = Math.max(maxNum100K, thisNum);
+					// 		}
+					// 	});
 					stateResponse.features.forEach(state => {
-						mcdonaldsInformation.forEach(mcdonalds => {
-							if(state.properties.name === mcdonalds.STATE) {
-								state.properties.numberOfMcdonalds = mcdonalds["Number of McDonald's"]
-							}
-						})
-					})
+						let stateName = state.properties.name;
+						// console.log(stateName);
+						let mcdonalds = mcdonaldsInformation.find(obj => obj.STATE === stateName);
+						// console.log(mcdonalds);
+						// To retrieve multiple items:
+						// let mcdonalds = mcdonaldsInformation.filter(obj => obj.STATE === stateName);
+						if (mcdonalds) {
+							// console.log(mcdonalds);
+							// Create a new field.
+							let thisNum = mcdonalds["Number of McDonald's"];
+							// console.log(thisNum);
+							state.properties.numberOfMcdonalds = thisNum;
+							minNum = Math.min(minNum, thisNum);
+							maxNum = Math.max(maxNum, thisNum);
+							// Create another new field.
+							thisNum = mcdonalds["McDonald's per 100,000"];
+							state.properties.numberPer100K = thisNum;
+							minNum100K = Math.min(minNum100K, thisNum);
+							maxNum100K = Math.max(maxNum100K, thisNum);
+						} else {  // DC, Puerto Rico, etc
+							state.properties.numberOfMcdonalds = 0;
+							state.properties.numberPer100K = 0;
+						}
+					});
 
-					console.log(stateResponse);
+					// console.log('Here 1');
+
+					// console.log(stateResponse);
+					// console.log(minNum100K);
+					// console.log(maxNum100K);
 
 					map.addSource("states", {
 						type : "geojson",
 						data : stateResponse
-					})
+					});
+
 					// https://maplibre.org/maplibre-style-spec/expressions/
 					// These are really complicated and hard to understand, don't try too hard!
 					// https://stackoverflow.com/questions/62263771/error-in-interpolate-expressions-when-trying-to-change-color-according-to-mult
@@ -61,13 +114,22 @@
 						paint : {
 							"fill-opacity" : 0.5,
 							"fill-color" : [
-				        'interpolate', ['linear'],
-				        ['number', ['get', 'numberOfMcdonalds']],
-				        1, 'white',
-				        1200, 'red'
-				      ]
+								'interpolate', 
+								['linear'],
+								['number', ['get', 'numberOfMcdonalds']],
+								minNum, 'white',
+								maxNum, 'red'
+							]
+							// "fill-color" : [
+							// 	'interpolate', 
+							// 	['linear'],
+							// 	['number', ['get', 'numberPer100K']],
+							// 	minNum100K, 'white',
+							// 	maxNum100K, 'red'
+							// ]
 						}
-					})
+					});
+					// console.log('Here 2');
 					map.addLayer({
 						id : "states-line-layer",
 						type : "line",
@@ -76,24 +138,30 @@
 							"line-opacity" : 0.5,
 							"line-color" : "#000000"
 						}
-					})
+					});
 
 					// Doing the bounds stuff to have a nice zoom
 					let bounds = turf.bbox(stateResponse);
-					map.fitBounds(bounds)
+					map.fitBounds(bounds);
+
+					// console.log('Here 3');
 
 					map.on('click', 'states-fill-layer', function(e) {
-						const clickedFeatures = map.queryRenderedFeatures(e.point, { layers : ['states-fill-layer']} )
-						console.log(clickedFeatures)
+						const clickedFeatures = map.queryRenderedFeatures(
+							e.point, { layers : ['states-fill-layer']} );
+						// console.log(clickedFeatures);
 
 						// Now here we can "loop" over the spreadsheet data to find the one that has the same name as the clicked state
 						let clickedStateName = clickedFeatures[0].properties.name;
+						// console.log(clickedStateName);
 						let numberOfMcdonalds = clickedFeatures[0].properties.numberOfMcdonalds;
+						// console.log(numberOfMcdonalds);
 
 						popup.setLngLat(e.lngLat).setHTML(
 							`You clicked ${clickedStateName}, which has ${numberOfMcdonalds} McDonald's!`
 						).addTo(map)
-					})
+					});
+					// console.log('Here 4');
 				})
 			})
 
